@@ -6,6 +6,30 @@
     <title>查询弹幕发送者</title>
     <!-- 引入Materialize CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <style>
+        /* 自定义样式可以覆盖Materialize的默认样式 */
+        .input-field label {
+            font-size: 1.2rem;
+        }
+        .input-field input {
+            font-size: 1.2rem;
+        }
+        .modal-content {
+            padding: 0 24px;
+        }
+        .modal-footer {
+            padding: 10px 24px;
+        }
+        @media (max-width: 600px) {
+            h3 {
+                font-size: 1.5rem;
+            }
+            .btn {
+                width: 100%;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
