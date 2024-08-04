@@ -4,7 +4,8 @@ import requests
 import time
 import re
 import json
-from fastapi import FastAPI
+import math
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -24,10 +25,7 @@ user_agent_list = [
 ]
 headers = {'User-Agent': random.choice(user_agent_list)}
 
-crack_list = []  # 逆向mid后的弹幕数据
-all_danmu = []  # 全部弹幕数据
-STOP_FLAG = False  # 终止标签
-
+cache = {}
 CRCPOLYNOMIAL = 0xEDB88320
 crctable = [0 for _ in range(256)]
 
@@ -106,7 +104,6 @@ def crack(danmu):
     if i == 100000000:
         return -1
     danmu['mid'] = f"{i}{deepCheckData[1]}"
-    crack_list.append(danmu)
 
 
 class BVRequest(BaseModel):
@@ -119,18 +116,30 @@ def _():
     return FileResponse('./html/index.html')
 
 
+class DanmuResult(BaseModel):
+    danmu: str
+    userid: str
+
+
 @app.post("/get_user_id")
-def get_user_id(request: BVRequest):
-    bvid = get_bvid(request.videosrc)
-    keyword = request.keyword
-    info = get_info(bvid)
-    cid = info["cid"]
-    get_danmu(cid, 1)
-    for danmu in all_danmu:
-        if keyword in danmu['content']:
-            crack(danmu)
-            return {"user_id": danmu['mid']}
-    return {"error": "Keyword not found"}
+def get_user_id(request: BVRequest) -> list[DanmuResult]:
+    try:
+        bvid = get_bvid(request.videosrc)
+        keyword = request.keyword
+        info = get_info(bvid)
+        cid = info["cid"]
+        duration = info["duration"]
+        ls = []
+        for i in range(math.ceil(duration / (60 * 6))):
+            all_danmu = get_danmu(cid, i+1)
+            for danmu in all_danmu:
+                if keyword in danmu['content']:
+                    crack(danmu)
+                    ls.append(DanmuResult(danmu=danmu['content'], userid=danmu['mid']))
+                    return ls
+        return ls
+    except Exception:
+        raise HTTPException(500)
 
 
 def get_bvid(url):
@@ -170,7 +179,12 @@ def get_info(bvid):
 
 
 def get_danmu(cid, segment_index):
-    global all_danmu
+    all_danmu = []
+
+    global cached
+    if (cached := cache.get(cid)):
+        # cached['lastupdtime']
+        pass
 
     url = f'https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid={cid}&segment_index={segment_index}'
     resp = requests.get(url, headers=headers)
@@ -186,6 +200,8 @@ def get_danmu(cid, segment_index):
         add = {"midHash": danmu.midHash, "content": danmu.content, "ctime": time.strftime("%Y-%m-%d %H:%M:%S", ctime),
                "fontsize": danmu.fontsize, "mode": mode_list[danmu.mode], "id": danmu.idStr}
         all_danmu.append(add)
+    cache[cid] = {'lastupdtime': time.time(), 'danmu': all_danmu}
+    return all_danmu
 
 
 if __name__ == '__main__':
