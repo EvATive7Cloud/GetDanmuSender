@@ -1,0 +1,4 @@
+outputs
+DanmuJSON
+.venv
+__pycache__

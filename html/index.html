@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BV号查询</title>
+    <!-- 引入Materialize CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h3 class="center-align">BV号查询</h3>
+        <form id="bvForm" class="col s12">
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="bvid" type="text" class="validate" required>
+                    <label for="bvid">BV号</label>
+                </div>
+                <div class="input-field col s12">
+                    <input id="keyword" type="text" class="validate" required>
+                    <label for="keyword">关键词</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s12 center-align">
+                    <button class="btn waves-effect waves-light" type="submit" name="action">查询
+                        <i class="material-icons right">send</i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="modal1" class="modal">
+        <div class="modal-content">
+            <h4>查询结果</h4>
+            <p id="resultText"></p>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">关闭</a>
+        </div>
+    </div>
+
+    <!-- 引入jQuery和Materialize JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('.modal').modal();
+
+            $('#bvForm').submit(function (event) {
+                event.preventDefault();
+
+                var bvid = $('#bvid').val();
+                var keyword = $('#keyword').val();
+
+                $.ajax({
+                    url: './get_user_id',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ videosrc: bvid, keyword: keyword }),
+                    success: function (response) {
+                        if (response.user_id) {
+                            var link = '用户id：<a href="https://space.bilibili.com/' + response.user_id + '" target="_blank">' + response.user_id + '</a>';
+                            $('#resultText').html(link);
+                        } else {
+                            $('#resultText').text('未找到相关用户');
+                        }
+                        $('#modal1').modal('open');
+                    },
+                    error: function () {
+                        $('#resultText').text('查询失败，请重试');
+                        $('#modal1').modal('open');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
