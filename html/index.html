@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +7,6 @@
     <!-- 引入Materialize CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
 </head>
-
 <body>
     <div class="container">
         <h3 class="center-align">BV号查询</h3>
@@ -31,13 +29,27 @@
                 </div>
             </div>
         </form>
+
+        <!-- Progress Bar -->
+        <div class="progress" id="progressBar" style="display:none;">
+            <div class="indeterminate"></div>
+        </div>
     </div>
 
     <!-- Modal Structure -->
     <div id="modal1" class="modal">
         <div class="modal-content">
             <h4>查询结果</h4>
-            <p id="resultText"></p>
+            <table id="resultTable" class="striped">
+                <thead>
+                    <tr>
+                        <th>弹幕内容</th>
+                        <th>用户ID</th>
+                    </tr>
+                </thead>
+                <tbody id="resultBody">
+                </tbody>
+            </table>
         </div>
         <div class="modal-footer">
             <a href="#!" class="modal-close waves-effect waves-green btn-flat">关闭</a>
@@ -49,37 +61,52 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
     <script>
-        $(document).ready(function () {
+        $(document).ready(function(){
             $('.modal').modal();
 
-            $('#bvForm').submit(function (event) {
+            $('#bvForm').submit(function(event) {
                 event.preventDefault();
 
                 var bvid = $('#bvid').val();
                 var keyword = $('#keyword').val();
 
+                // 显示进度条
+                $('#progressBar').show();
+
                 $.ajax({
-                    url: './get_user_id',
+                    url: '/get_user_id',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({ videosrc: bvid, keyword: keyword }),
-                    success: function (response) {
-                        if (response.user_id) {
-                            var link = '用户id：<a href="https://space.bilibili.com/' + response.user_id + '" target="_blank">' + response.user_id + '</a>';
-                            $('#resultText').html(link);
+                    success: function(response) {
+                        var resultBody = $('#resultBody');
+                        resultBody.empty();
+
+                        if(response.length > 0) {
+                            response.forEach(function(item) {
+                                var row = '<tr>' +
+                                    '<td>' + item.danmu + '</td>' +
+                                    '<td><a href="https://space.bilibili.com/' + item.userid + '" target="_blank">' + item.userid + '</a></td>' +
+                                    '</tr>';
+                                resultBody.append(row);
+                            });
                         } else {
-                            $('#resultText').text('未找到相关用户');
+                            var row = '<tr><td colspan="2">未找到相关弹幕</td></tr>';
+                            resultBody.append(row);
                         }
                         $('#modal1').modal('open');
                     },
-                    error: function () {
-                        $('#resultText').text('查询失败，请重试');
+                    error: function() {
+                        $('#resultBody').html('<tr><td colspan="2">查询失败，请重试</td></tr>');
                         $('#modal1').modal('open');
+                    },
+                    complete: function() {
+                        // 隐藏进度条
+                        $('#progressBar').hide();
                     }
                 });
             });
         });
     </script>
 </body>
-
 </html>
